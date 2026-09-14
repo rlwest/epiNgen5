@@ -60,4 +60,3 @@ def retrieve_memory_chunk(buffer, matches, negations={}, utility_threshold=1):
     return result_chunk
 
 
-

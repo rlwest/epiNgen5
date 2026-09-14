@@ -20,3 +20,8 @@ DM_Subsymbolic_Productions.append({
     'report': "adjust_DM",
                 })
 
+
+REQUIRES = {
+    "working_memory_buffers": ["DM_command_buffer", "focusbuffer"],
+    "memories_keys": ["declarative_memory", "working_memory"],
+}

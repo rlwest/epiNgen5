@@ -1,4 +1,4 @@
-from CMCed.utility import *
+from computational_architecture.utility import Utility
 # nov 7
 
 class ProductionCycle:

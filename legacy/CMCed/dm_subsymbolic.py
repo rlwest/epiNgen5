@@ -19,4 +19,3 @@ DM_Subsymbolic_Productions.append({
     'action': adjust_DM,
     'report': "adjust_DM",
                 })
-

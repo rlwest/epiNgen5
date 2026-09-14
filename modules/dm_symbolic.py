@@ -35,6 +35,17 @@ DM_Symbolic_Productions.append({
     'report': "retrieve_DM",
 })
 
+
+REQUIRES = {
+    "working_memory_buffers": [
+        "DM_retieval_buffer",
+        "DM_command_buffer",
+        "DM_output_buffer",
+        "focusbuffer",
+    ],
+    "memories_keys": ["declarative_memory", "working_memory"],
+}
+
 def retrieve_partial_DM(memories):
     # Retrieve retrieval_conditions from DM_retieval_buffer
     retrieval_conditions = memories['working_memory']['DM_retieval_buffer']
@@ -60,6 +71,6 @@ DM_Symbolic_Productions.append({
     'matches': {'working_memory': {'DM_command_buffer': {'state': 'retrieve_partial'}}},
     'negations': {},
     'utility': 10,
-    'action': retrieve_DM,
-    'report': "retrieve_DM",
+    'action': retrieve_partial_DM,
+    'report': "retrieve_partial_DM",
 })
