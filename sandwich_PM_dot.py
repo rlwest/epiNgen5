@@ -4,7 +4,7 @@
 # The motor module carries out commands from the motor buffer after a delay.
 # Declarative memory productions are imported but not scheduled in this model.
 
-from arc_templates.actr_ish import *
+from arc_templates.PM import *
 
 # -------------------------
 # Initialize Memories
