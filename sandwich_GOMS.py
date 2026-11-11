@@ -5,8 +5,8 @@ Production conditions remain dictionaries. Retrieval is requested through
 working-memory buffers and handled by the symbolic DM production system.
 """
 
-#from arc_templates.actr_ish import *
-from arc_templates.GOMS import *
+from arc_templates.actr_ish import *
+#from arc_templates.GOMS import *
 
 # -------------------------
 # Initialize Memories
@@ -24,11 +24,11 @@ working_memory.DM_retieval_buffer = {}
 memories.declarative_memory = {'fries': {'name': 'fries',
                                 'condition': 'good',
                                 'side_order': 'yes',
-                                'utility':4},
+                                'utility':1},
                       'house_salad': {'name': 'house_salad',
                                       'condition': 'good',
                                       'side_order': 'yes',
-                                      'utility':1},
+                                      'utility':2},
                       'poutine': {'name': 'poutine',
                                   'condition': 'good',
                                   'side_order': 'no',

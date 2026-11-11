@@ -1,32 +1,98 @@
+"""ACT-R-ish: GOMS-level modules plus subsymbolic declarative-memory processes.
 
-# import productions for modules
+CAPABILITIES
+    Imports VisualProductions, MotorProductions, DM_Symbolic_Productions,
+    and DM_Subsymbolic_Productions, as well as ProductionCycle. Models define
+    their own ProceduralProductions and explicitly register all production
+    systems they intend to run. Import alone does NOT start subsymbolic updates.
+    This is an epiNgen teaching architecture, not a full ACT-R implementation.
+
+MEMORY ORGANIZATION
+    Exposes connected memories, working_memory, and environment MemoryView
+    objects, with an initially empty working_memory.focusbuffer. Models
+    initialize required motor/visual buffers and the declarative interface:
+        DM_command_buffer              normal / retrieve / retrieve_partial
+        DM_retieval_buffer             retrieval matches and negations
+        DM_output_buffer               returned chunk or no_match result
+        memories.declarative_memory    persistent chunks and their utility
+    DM_retieval_buffer is the existing spelling in dm_symbolic.py and must
+    remain unchanged until the whole interface is migrated together.
+    At depth 2, whole-chunk assignment deep-copies; slot edits do not copy.
+    Both bracket and dot access reach the same underlying memory.
+
+SUBSYMBOLIC PROCESSING
+    This template supplies an ACT-R-ish-specific subsymbolic production action
+    that applies noise, decay, and cue-based spreading activation to
+    declarative_memory (not working_memory). The focusbuffer provides the cue
+    for spreading activation. Configure ACTRISH_SUBSYMBOLIC_PARAMETERS:
+        noise_scalar         Gaussian utility noise per subsymbolic firing
+        decay_amount         utility subtracted per subsymbolic firing
+        spreading_boost      utility increase for shared cue values
+    All three controls default to 0 (inactive). The model must register
+    DM_Subsymbolic_Productions for these updates to occur. The underlying
+    utility operations clamp noise/decay at zero. Retrieval is separately
+    handled by DM_Symbolic_Productions; changing a subsymbolic parameter does
+    not change retrieval thresholds or automatically request retrieval.
+
+IMPORT BEHAVIOUR
+    Importing assembles the architecture but runs no cycles, has no startup
+    printout, and does not reset shared state. Run independent simulations in
+    fresh processes.
+"""
+
 from modules.visual_productions import VisualProductions, REQUIRES as VISUAL_REQUIRES
-print("Motor Module REQUIRES:", VISUAL_REQUIRES)
 
 from modules.motor_productions import MotorProductions, REQUIRES as MOTOR_REQUIRES
-print("Motor Module REQUIRES:", MOTOR_REQUIRES)
 
 from modules.dm_symbolic import DM_Symbolic_Productions
-from modules.dm_subsymbolic import DM_Subsymbolic_Productions
+from modules.dm_subsymbolic import DM_Subsymbolic_Productions as _BASE_DM_SUBSYMBOLIC_PRODUCTIONS
+from cognitive_functions.chunk_noise import add_noise_to_utility
+from cognitive_functions.decay import decay_all_memory_chunks
+from cognitive_functions.spreading_activation import spreading_activation_boost
+
+# Architecture-local settings. Subsymbolic processes work on declarative
+# memory; working memory (focusbuffer) supplies the spreading-activation cue.
+# Keeping this override in the ACT-R-ish template leaves shared modules and
+# the GOMS architecture unchanged.
+ACTRISH_SUBSYMBOLIC_PARAMETERS = {
+    'noise_scalar': 0.0,
+    'decay_amount': 0.0,
+    'spreading_boost': 0.0,
+}
+
+
+def _adjust_actrish_DM(memories):
+    settings = ACTRISH_SUBSYMBOLIC_PARAMETERS
+    if settings['noise_scalar']:
+        add_noise_to_utility(
+            memories['declarative_memory'], scalar=settings['noise_scalar'])
+    if settings['decay_amount']:
+        decay_all_memory_chunks(
+            memories, 'declarative_memory', decay_amount=settings['decay_amount'])
+    if settings['spreading_boost']:
+        spreading_activation_boost(
+            memories, 'declarative_memory',
+            memories['working_memory']['focusbuffer'],
+            boost_factor=settings['spreading_boost'])
+
+
+# Clone the module's production definitions instead of modifying the shared
+# list: this architecture alone uses the corrected subsymbolic action.
+DM_Subsymbolic_Productions = [
+    {**production, 'action': _adjust_actrish_DM}
+    if production.get('report') == 'adjust_DM' else production.copy()
+    for production in _BASE_DM_SUBSYMBOLIC_PRODUCTIONS
+]
 
 from computational_architecture.production_cycle import ProductionCycle
 
 from computational_architecture.memory_view import MemoryView as _MemoryView
 from computational_architecture.memory_view import register_buffer as _register_buffer
 
-# This list controls the names supplied by the student's single star import.
-# The reusable implementation stays out of the student's model namespace.
-__all__ = ['ProductionCycle', 'working_memory', 'environment', 'memories',
-           'register_buffer', 'VisualProductions', 'MotorProductions',
-           'DM_Symbolic_Productions', 'DM_Subsymbolic_Productions']
 
 
-# ASSEMBLING THIS ARCHITECTURE
-# MemoryView supplies the access mechanism; this template supplies its policy.
-# God Mode exposes both working memory and the environment for direct access.
-# Depth 1 is a memory source; depth 2 is a buffer, object, or stored chunk.
-# Selecting this depth gives ALL such locations the same copying rule, even
-# in memory sources added later by students. Slot edits remain ordinary edits.
+
+# Import the architecture's connected memory views; models fill their buffers.
 memories = _MemoryView({'working_memory': {}, 'environment': {}}, copy_chunk_depth=2)
 working_memory = memories.working_memory
 environment = memories.environment
@@ -51,26 +117,3 @@ def register_buffer(name, chunk=None):
     """
     return _register_buffer(working_memory, name, chunk)
 
-
-# TEACHING FEEDBACK
-# Importing assembles the configuration and explains it; it does not run a
-# model. Python normally imports a module once per process, so another import
-# neither resets the memories nor repeats this introduction.
-print("""God Mode with dot access and whole-chunk copying loaded.
-You have ProductionCycle, working_memory, environment, and memories.
-  working_memory.focusbuffer starts empty.
-  environment is empty and remains directly accessible in God Mode.
-  memories connects working_memory and environment to the engine.
-
-Set a slot: working_memory.focusbuffer.state = 'bread1'
-Replace a chunk: working_memory.focusbuffer = {'state': 'bread1'}
-Whole-chunk assignments copy equally in working memory, the environment,
-and any new memory source. Slot edits preserve the other slots.
-New buffers and objects need no registration:
-  working_memory.retrievalbuffer = {'state': 'empty'}
-  environment.bread2 = environment.bread1  # independent copy (create bread1 first)
-Dictionary conditions, wildcard matching, bracket access, and update() still work.
-There is no automatic merging, activation change, or buffer-only restriction.
-The reusable access mechanism is in computational_architecture/memory_view.py.
-Fill your memories, define productions, then create and run ProductionCycle.
-""")
